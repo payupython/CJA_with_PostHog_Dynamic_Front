@@ -7,6 +7,7 @@ export interface Rule {
   segment: string;
   score: number;
   minSessionSeconds?: number;  // tiempo mínimo desde first_seen
+  weekendCheck?: boolean;      // usa key weekend_recent (TTL 120s) en lugar de counters
 }
 
 export const RULES: Rule[] = [
@@ -46,5 +47,15 @@ export const RULES: Rule[] = [
     windowSeconds: 1800,
     segment: 'active_searcher',
     score: 0.50,
+  },
+  {
+    id: 'weekend_interest',
+    name: 'Filtró Sábado/Domingo en últimos 2 min',
+    counterKey: 'weekend_recent',  // key con TTL 120s — no contadores normales
+    threshold: 1,
+    windowSeconds: 120,
+    segment: 'weekend_interest',
+    score: 0.65,
+    weekendCheck: true,
   },
 ];

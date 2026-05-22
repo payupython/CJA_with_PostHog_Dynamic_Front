@@ -8,6 +8,7 @@ export interface Rule {
   segment: string;
   score: number;
   minSessionSeconds?: number;
+  weekendCheck?: boolean;
 }
 
 export const RULES: Rule[] = [
@@ -47,5 +48,15 @@ export const RULES: Rule[] = [
     windowSeconds: 1800,
     segment: 'active_searcher',
     score: 0.50,
+  },
+  {
+    id: 'weekend_interest',
+    name: 'Filtró Sábado/Domingo en últimos 2 min',
+    counterKey: 'weekend_recent',
+    threshold: 1,
+    windowSeconds: 120,
+    segment: 'weekend_interest',
+    score: 0.65,
+    weekendCheck: true,
   },
 ];

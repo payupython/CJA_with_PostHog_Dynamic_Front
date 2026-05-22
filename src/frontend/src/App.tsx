@@ -69,6 +69,7 @@ function App() {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showHighIntentBanner, setShowHighIntentBanner] = useState(false);
+  const [showWeekendBanner, setShowWeekendBanner] = useState(false);
   const [inviteNotif, setInviteNotif] = useState<{ ruleName: string; segment: string } | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
@@ -182,6 +183,10 @@ function App() {
         if (data.userId !== userEmail) return;
         if (data.segment === 'high_intent') {
           setShowHighIntentBanner(true);
+        }
+        if (data.segment === 'weekend_interest') {
+          setShowWeekendBanner(true);
+          return; // no mostrar InviteNotif para ésta
         }
         // Mostrar notificación de invitación para cualquier regla
         setInviteNotif({ ruleName: data.rule || data.segment, segment: data.segment });
@@ -319,7 +324,9 @@ function App() {
   const toggleDay = (jsDay: number) => {
     setSelectedDays(prev => {
       const next = new Set(prev);
-      next.has(jsDay) ? next.delete(jsDay) : next.add(jsDay);
+      const adding = !next.has(jsDay);
+      adding ? next.add(jsDay) : next.delete(jsDay);
+      if (adding && userEmail) ingest(userEmail, 'day_filter_toggled', { day: jsDay });
       return next;
     });
   };
@@ -406,6 +413,23 @@ function App() {
           fromEmail={userEmail}
           onDismiss={() => setInviteNotif(null)}
         />
+      )}
+
+      {/* Weekend interest banner */}
+      {showWeekendBanner && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
+          <div className="max-w-xl mx-auto bg-[#1c2a3a] border border-[#3b6ea5]/60 rounded-xl shadow-2xl p-4 flex items-center gap-4">
+            <div className="text-2xl shrink-0">🗓️</div>
+            <div className="flex-1">
+              <p className="text-white font-bold text-sm">¿Te interesan los eventos de fin de semana?</p>
+              <p className="text-blue-200/70 text-xs mt-0.5">Filtraste por Sábado o Domingo — te avisamos cuando haya entradas disponibles para el fin de semana.</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-blue-300/80">✓ Alertas activas</span>
+              <button onClick={() => setShowWeekendBanner(false)} className="text-blue-300/60 hover:text-white transition text-xl leading-none" aria-label="Cerrar">×</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* High intent banner */}

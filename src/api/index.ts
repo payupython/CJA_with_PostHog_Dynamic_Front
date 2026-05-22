@@ -283,7 +283,7 @@ app.get('/api/analytics/users', async (_req: Request, res: Response) => {
   if (!redisClient?.isOpen) return res.status(503).json({ error: 'Redis not available' });
   try {
     const keys = await redisClient.keys('user:*');
-    const userKeys = keys.filter(k => !k.includes(':counters'));
+    const userKeys = keys.filter(k => !k.endsWith(':counters') && !k.endsWith(':sites'));
     const users = await Promise.all(
       userKeys.map(async (key) => {
         const data = await redisClient.hGetAll(key);
@@ -303,7 +303,7 @@ app.get('/api/analytics/stats', async (_req: Request, res: Response) => {
   if (!redisClient?.isOpen) return res.status(503).json({ error: 'Redis not available' });
   try {
     const keys = await redisClient.keys('user:*');
-    const userKeys = keys.filter(k => !k.includes(':counters'));
+    const userKeys = keys.filter(k => !k.endsWith(':counters') && !k.endsWith(':sites'));
     const streamLen = await redisClient.xLen('events:realtime').catch(() => 0);
     const segments: Record<string, number> = {};
     for (const key of userKeys) {
