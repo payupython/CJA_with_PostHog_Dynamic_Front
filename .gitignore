@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# State & Logs (IDDRR)
+state/
+logs/
+*.log
+
+# Data
+data/
+data.db
+database.sqlite
+events.db
+
+# Development (debug/test scripts)
+dev/
+*.test.ts
+*.spec.ts
+
+# IDE & Editor
+.vscode/
+.idea/
+.claude/
+.claude-plugins/
+config/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+.next/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.tunnel-frontend-url
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# docs md
+*.md
+skills/
+
+# video
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.webm
+*.flv
+*.mpeg
+*.mpg
+*.m4v
+*.3gp
+

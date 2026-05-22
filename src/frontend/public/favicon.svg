@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <filter id="ink" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+
+  <!-- Parchment dark background -->
+  <rect width="32" height="32" rx="7" fill="#1a1208"/>
+
+  <g filter="url(#ink)" fill="#c9a227">
+    <!-- Note head — organic, slightly irregular blob -->
+    <path d="M6.5 25.8 C6.8 22.8 9.2 21.2 12.2 21.8 C15 22.4 16.2 24.6 15 26.4 C13.8 28.2 10.5 28.6 8.2 27.4 C7 26.8 6.3 26.4 6.5 25.8Z"/>
+
+    <!-- Stem — thin vertical, slightly irregular -->
+    <path d="M15 24 C15.3 17 14.9 11 15.3 4.8"
+      fill="none" stroke="#c9a227" stroke-width="1.1" stroke-linecap="round"/>
+
+    <!-- Flag 1 — calligraphic: thick swoop, tapers at end -->
+    <path d="M15.3 4.8 C15.3 4.8 21.5 7 22 11.5 C22.3 13.5 19.5 15 17.5 15.2 C16.5 15.3 15.8 15 15.8 15 C16.5 14 19 13 19.2 11 C19.5 8.5 16.5 6.5 15.3 6.2 Z"/>
+
+    <!-- Flag 2 — calligraphic: same swoop, lower -->
+    <path d="M15.3 9.2 C15.3 9.2 21.5 11.2 22 15.7 C22.3 17.7 19.5 19.2 17.5 19.4 C16.5 19.5 15.8 19.2 15.8 19.2 C16.5 18.2 19 17.2 19.2 15.2 C19.5 12.7 16.5 10.7 15.3 10.4 Z"/>
+  </g>
+</svg>
