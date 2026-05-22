@@ -7,19 +7,20 @@ package-lock.json
 *.sqlite
 *.sqlite3
 
-# State & Logs (IDDRR)
-state/
+# Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Data
+# Data files
 data/
 data.db
 database.sqlite
 events.db
 
-# Development (debug/test scripts)
-dev/
+# Test files
 *.test.ts
 *.spec.ts
 
@@ -28,35 +29,50 @@ dev/
 .idea/
 .claude/
 .claude-plugins/
-config/
 *.swp
 *.swo
 
 # OS
 .DS_Store
+._*
 Thumbs.db
 
-# Build
+# Build output
 dist/
 build/
 .next/
 
-# Environment
+# Environment — never commit secrets
 .env
 .env.local
 .env.*.local
 .tunnel-frontend-url
 
-# Node
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# docs md
-*.md
+# IDDRR internal (methodology state, not project code)
+state/
+config/
 skills/
+run-iddrr.sh
+run-ideation.sh
+run-tunnels.sh
+dev/
 
-# video
+# Internal docs (PDP, IDDRR, setup notes) — keep only root README
+*.md
+!/README.md
+
+# Boilerplate / random files
+descarga.png
+src/frontend/src/assets/react.svg
+src/frontend/src/assets/vite.svg
+src/api/tunnel.ts
+
+# TLS certs (generated locally)
+*.pem
+*.key
+*.crt
+
+# Video/binary assets (too large for git — serve from CDN or local)
 *.mp4
 *.avi
 *.mkv
