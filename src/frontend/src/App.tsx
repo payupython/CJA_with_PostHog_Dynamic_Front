@@ -7,6 +7,7 @@ import { Landing } from './Landing';
 import { usePostHog } from '@posthog/react';
 import { ingest } from './ingest';
 import { InviteNotification } from './InviteNotification';
+import { RuleBannerManager } from './components/RuleBannerManager';
 
 interface Event {
   id: number;
@@ -58,6 +59,11 @@ function App() {
   const [selectedSite, setSelectedSite] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set());
+  const [weekendClickCount, setWeekendClickCount] = useState(0);
+  const [showWeekendPrompt, setShowWeekendPrompt] = useState(false);
+  const [weekendPermanent, setWeekendPermanent] = useState(() =>
+    localStorage.getItem('weekend_permanent') === '1'
+  );
   const [sortKey, setSortKey] = useState<'site_name' | 'title' | 'event_date' | 'time' | 'status'>('event_date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [carouselIdx, setCarouselIdx] = useState(0);
@@ -68,8 +74,6 @@ function App() {
   );
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [showHighIntentBanner, setShowHighIntentBanner] = useState(false);
-  const [showWeekendBanner, setShowWeekendBanner] = useState(false);
   const [inviteNotif, setInviteNotif] = useState<{ ruleName: string; segment: string } | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
 
@@ -130,6 +134,10 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    if (weekendPermanent) setSelectedDays(new Set([0, 6]));
+  }, [weekendPermanent]);
+
   // fetchEvents as a stable callback that reads authToken from state
   useEffect(() => {
     if (!authToken) return;
@@ -173,7 +181,6 @@ function App() {
     };
   }, [authToken]);
 
-  // SSE — detectar high_intent del usuario actual → mostrar banner
   useEffect(() => {
     if (!userEmail) return;
     const es = new EventSource(`${API_URL}/api/sse/dashboard`);
@@ -181,14 +188,7 @@ function App() {
       try {
         const data = JSON.parse(e.data);
         if (data.userId !== userEmail) return;
-        if (data.segment === 'high_intent') {
-          setShowHighIntentBanner(true);
-        }
-        if (data.segment === 'weekend_interest') {
-          setShowWeekendBanner(true);
-          return; // no mostrar InviteNotif para ésta
-        }
-        // Mostrar notificación de invitación para cualquier regla
+        if (data.segment === 'weekend_interest') return;
         setInviteNotif({ ruleName: data.rule || data.segment, segment: data.segment });
       } catch {}
     });
@@ -329,6 +329,27 @@ function App() {
       if (adding && userEmail) ingest(userEmail, 'day_filter_toggled', { day: jsDay });
       return next;
     });
+    if (jsDay === 0 || jsDay === 6) {
+      setWeekendClickCount(c => {
+        const n = c + 1;
+        if (n >= 2 && !weekendPermanent) setShowWeekendPrompt(true);
+        return n;
+      });
+    }
+  };
+
+  const acceptWeekendPermanent = () => {
+    localStorage.setItem('weekend_permanent', '1');
+    setWeekendPermanent(true);
+    setSelectedDays(new Set([0, 6]));
+    setShowWeekendPrompt(false);
+    if (userEmail) ingest(userEmail, 'weekend_permanent_accepted');
+  };
+
+  const removeWeekendPermanent = () => {
+    localStorage.removeItem('weekend_permanent');
+    setWeekendPermanent(false);
+    setSelectedDays(new Set());
   };
 
   const dateRange = useMemo(() => {
@@ -342,7 +363,7 @@ function App() {
     setSearchQuery('');
     setSelectedSite(null);
     setSelectedStatus(null);
-    setSelectedDays(new Set());
+    setSelectedDays(weekendPermanent ? new Set([0, 6]) : new Set());
   };
 
   const allSites = Object.keys(siteStats).sort();
@@ -415,42 +436,8 @@ function App() {
         />
       )}
 
-      {/* Weekend interest banner */}
-      {showWeekendBanner && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-          <div className="max-w-xl mx-auto bg-[#1c2a3a] border border-[#3b6ea5]/60 rounded-xl shadow-2xl p-4 flex items-center gap-4">
-            <div className="text-2xl shrink-0">🗓️</div>
-            <div className="flex-1">
-              <p className="text-white font-bold text-sm">¿Te interesan los eventos de fin de semana?</p>
-              <p className="text-blue-200/70 text-xs mt-0.5">Filtraste por Sábado o Domingo — te avisamos cuando haya entradas disponibles para el fin de semana.</p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-blue-300/80">✓ Alertas activas</span>
-              <button onClick={() => setShowWeekendBanner(false)} className="text-blue-300/60 hover:text-white transition text-xl leading-none" aria-label="Cerrar">×</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* High intent banner */}
-      {showHighIntentBanner && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
-          <div className="max-w-2xl mx-auto bg-[#7a4f2e] border border-[#9a6840] rounded-xl shadow-2xl p-4 flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-white font-bold text-sm">¿Buscas entradas activamente?</p>
-              <p className="text-[#f0c89a] text-xs mt-0.5">Te avisamos por email cuando haya disponibilidad en los teatros que visitaste.</p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-[#f0c89a] font-medium">✓ Ya tienes alertas activas en {userEmail}</span>
-              <button
-                onClick={() => setShowHighIntentBanner(false)}
-                className="text-[#f0c89a] hover:text-white transition text-lg leading-none"
-                aria-label="Cerrar"
-              >×</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Rule-based banners */}
+      {userEmail && <RuleBannerManager userEmail={userEmail} />}
       {/* Mobile overlay when sidebar open */}
       {sidebarOpen && (
         <div
@@ -637,7 +624,7 @@ function App() {
             </div>
 
             {/* Day-of-week filter */}
-            <div className="flex justify-center mt-3">
+            <div className="flex justify-center items-center mt-3 gap-2">
               <div className="flex overflow-x-auto sm:flex-nowrap items-center gap-1 bg-white rounded-lg p-1 shadow-lg ring-1 ring-white/10 scroll-smooth snap-x snap-mandatory">
                 {[
                   { label: 'L', jsDay: 1 },
@@ -648,15 +635,19 @@ function App() {
                   { label: 'S', jsDay: 6 },
                   { label: 'D', jsDay: 0 },
                 ].map(({ label, jsDay }) => {
+                  const isWeekend = jsDay === 0 || jsDay === 6;
                   const active = selectedDays.has(jsDay);
+                  const isPermanentWeekend = isWeekend && weekendPermanent && active;
                   return (
                     <button
                       key={jsDay}
                       onClick={() => toggleDay(jsDay)}
                       className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md text-[10px] sm:text-[11px] font-black transition-all duration-200 active:scale-90 snap-center shrink-0 ${
-                        active
-                          ? 'bg-[#7a4f2e] text-white scale-110 shadow-md'
-                          : 'bg-white text-stone-900 hover:bg-stone-100'
+                        isPermanentWeekend
+                          ? 'bg-indigo-500 text-white scale-110 shadow-md shadow-indigo-500/30'
+                          : active
+                            ? 'bg-[#7a4f2e] text-white scale-110 shadow-md'
+                            : 'bg-white text-stone-900 hover:bg-stone-100'
                       }`}
                     >
                       {label}
@@ -664,6 +655,36 @@ function App() {
                   );
                 })}
               </div>
+
+              {/* Weekend permanent indicator */}
+              {weekendPermanent && (
+                <button
+                  onClick={removeWeekendPermanent}
+                  className="flex items-center gap-1.5 bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/40 px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm hover:bg-indigo-500/30 transition shrink-0"
+                >
+                  🗓️ Fin de semana
+                  <X size={10} />
+                </button>
+              )}
+
+              {/* Weekend prompt — appears after 2+ weekend clicks */}
+              {showWeekendPrompt && !weekendPermanent && (
+                <div className="flex items-center gap-1.5 bg-indigo-500/20 ring-1 ring-indigo-400/40 rounded-full px-3 py-1 backdrop-blur-sm animate-in shrink-0">
+                  <span className="text-[10px] text-indigo-100 font-medium">¿Solo finde?</span>
+                  <button
+                    onClick={acceptWeekendPermanent}
+                    className="text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-400 px-2 py-0.5 rounded-full transition"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    onClick={() => setShowWeekendPrompt(false)}
+                    className="text-indigo-300/60 hover:text-white transition text-sm leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Helpers row */}
