@@ -11,11 +11,21 @@ import { getAppUrl } from './tunnel.js';
 
 // Redis client for ingest + SSE
 const redisUrl = process.env.REDIS_URL;
-const redisClient = redisUrl ? createClient({ url: redisUrl }) : null;
-const redisSub = redisUrl ? createClient({ url: redisUrl }) : null;
+const redisOpts = redisUrl ? {
+  url: redisUrl,
+  socket: { reconnectStrategy: (retries: number) => Math.min(retries * 200, 5000) },
+} : null;
+const redisClient = redisOpts ? createClient(redisOpts) : null;
+const redisSub = redisOpts ? createClient(redisOpts) : null;
 if (redisClient) {
+  redisClient.on('error', e => console.error('[Redis] error:', e.message));
+  redisClient.on('reconnecting', () => console.log('[Redis] reconnecting...'));
   redisClient.connect().catch(e => console.error('[Redis] connect error:', e));
-  redisSub!.connect().catch(e => console.error('[Redis sub] connect error:', e));
+}
+if (redisSub) {
+  redisSub.on('error', e => console.error('[Redis sub] error:', e.message));
+  redisSub.on('reconnecting', () => console.log('[Redis sub] reconnecting...'));
+  redisSub.connect().catch(e => console.error('[Redis sub] connect error:', e));
 }
 
 // Token validity: 90 days in milliseconds
